@@ -1,0 +1,78 @@
+---
+- hosts: all
+  remote_user: root
+  tasks:
+
+
+    - name: update cache option
+      apt:
+        update_cache: yes
+        force_apt_get: yes
+        cache_valid_time: 3600
+      become: true
+    
+    - name: Install openjdk-8-jdk  
+      apt: 
+        name: openjdk-8-jdk
+        state: present
+      become: true  
+  
+    - name: Install  maven  
+      apt:
+        name: maven
+        state: present
+      become: true
+
+
+    - name: Creates directory for java service two
+      file:
+        path: /home/ubuntu/javaServTwo
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: 0777
+      become: true
+
+
+
+
+    - name: copy service-two from local
+      copy:
+        src: ./{{item}}
+        dest: /home/ubuntu/javaServTwo
+      with_items:
+        ['pom.xml','service-two.iml','src'] 
+      become: true   
+    
+    - name: build app with maven
+      shell: "mvn clean package"
+      args:
+        chdir: /home/ubuntu/javaServTwo
+      become: true  
+   
+  
+    - name: systemd autostart config
+      template:
+        src: './templates/servicetwotemplate'
+        dest: '/etc/systemd/system/service-two.service'
+      become: true  
+  
+    - name: enable service-two
+      ansible.builtin.service:
+        name: service-two.service
+        enabled: yes
+      become: true
+
+    - name: start service-two
+      ansible.builtin.service:
+        name: service-two.service
+        state: started
+        daemon_reload: yes
+      become: true
+
+  
+  
+
+
+
+  
